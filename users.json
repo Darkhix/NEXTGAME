@@ -1,0 +1,17 @@
+{
+    "aaaaa": {
+        "password": "aaaaaaaaa"
+    },
+    "Donoso": {
+        "password": "123"
+    },
+    "Darkhi": {
+        "password": "123",
+        "correo": "darkhi@gmail.com"
+    },
+    "admin": {
+        "password": "admin",
+        "correo": "admin@example.com",
+        "admin": true
+    }
+}
