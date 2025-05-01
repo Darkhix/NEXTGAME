@@ -7,7 +7,7 @@ from tkinter import messagebox
 from pygame import mixer
 from fighter import Fighter
 
-# ------------------ INICIALIZACIÓN ------------------
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 pygame.init()
 mixer.init()
@@ -18,7 +18,7 @@ USERS_FILE = "users.json"
 current_user = None
 VALID_DOMAINS = ["@gmail.com", "@yahoo.cl", "@hotmail.com"]
 
-# ------------------ FUNCIONES DE USUARIOS ------------------
+#Funciones usuario
 
 def load_users():
     if os.path.exists(USERS_FILE):
@@ -44,7 +44,7 @@ def login_user(username, password):
     users = load_users()
     return username in users and users[username]["password"] == password
 
-# ------------------ CRUD DE USUARIOS ------------------
+# Crud
 
 def get_user(username):
     users = load_users()
@@ -69,7 +69,7 @@ def delete_user(username):
         return True
     return False
 
-# ------------------ TKINTER LOGIN/REGISTRO ------------------
+#login y registro
 
 def iniciar_tkinter_login():
     def validar_login():
@@ -161,13 +161,13 @@ def iniciar_tkinter_registro():
 
     registro.mainloop()
 
-# ------------------ INICIO DE SESIÓN ------------------
+#inicio de sesion
 
 iniciar_tkinter_login()
 if not current_user:
     sys.exit()
 
-# ------------------ CONFIGURACIÓN DE JUEGO ------------------
+#Ajustes del juego
 
 resolutions = [(800, 600)]
 res_index = 0
@@ -217,7 +217,7 @@ selected_index = 0
 options_items = ["Resolución", "Volumen Música", "Volumen FX", "Volver"]
 options_index = 0
 
-# ------------------ FUNCIONES DE DIBUJO ------------------
+#partes de del juego(barra de vida, titulo, etc)
 
 def draw_text(text, font, color, x, y):
     img = font.render(text, True, color)
@@ -268,7 +268,7 @@ def create_fighters():
 
 fighter_1, fighter_2 = create_fighters()
 
-# ------------------ LOOP PRINCIPAL ------------------
+#Loop para que funcione el juego
 
 run = True
 while run:
