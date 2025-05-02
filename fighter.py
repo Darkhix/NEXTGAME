@@ -1,6 +1,10 @@
 import pygame
+import json
+import os
 
 class Fighter():
+    JSON_PATH = 'usuarios.json'
+
     def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sound, ai=False, username=None):
         self.player = player
         self.size = data[0]
@@ -12,6 +16,8 @@ class Fighter():
         self.animation_steps = animation_steps
         self.sound = sound
         self.username = username
+
+        self.attacks_done = 0  # Nuevo: contador de ataques
 
         self.is_static_image = sprite_sheet.get_width() <= self.size and sprite_sheet.get_height() <= self.size
 
@@ -35,6 +41,43 @@ class Fighter():
         self.hit = False
         self.health = 100
         self.alive = True
+
+        # Crea o actualiza el JSON
+        if self.username:
+            self.init_user_data()
+
+    def init_user_data(self):
+        if not os.path.exists(Fighter.JSON_PATH):
+            with open(Fighter.JSON_PATH, 'w') as f:
+                json.dump({}, f)
+
+        with open(Fighter.JSON_PATH, 'r') as f:
+            data = json.load(f)
+
+        if self.username not in data:
+            data[self.username] = {
+                "health": self.health,
+                "attacks_done": self.attacks_done,
+                "is_alive": self.alive
+            }
+            with open(Fighter.JSON_PATH, 'w') as f:
+                json.dump(data, f, indent=4)
+
+    def save_user_data(self):
+        if not self.username:
+            return
+
+        with open(Fighter.JSON_PATH, 'r') as f:
+            data = json.load(f)
+
+        data[self.username] = {
+            "health": self.health,
+            "attacks_done": self.attacks_done,
+            "is_alive": self.alive
+        }
+
+        with open(Fighter.JSON_PATH, 'w') as f:
+            json.dump(data, f, indent=4)
 
     def load_images(self, sprite_sheet, animation_steps):
         animation_list = []
@@ -152,9 +195,12 @@ class Fighter():
                     self.attacking = False
                     self.attack_cooldown = 20
 
+        self.save_user_data()
+
     def attack(self, target):
         if self.attack_cooldown == 0:
             self.attacking = True
+            self.attacks_done += 1
             self.sound.play()
             attacking_rect = pygame.Rect(
                 self.rect.centerx - (2 * self.rect.width * self.flip),

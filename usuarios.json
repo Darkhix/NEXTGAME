@@ -1,0 +1,12 @@
+{
+    "Donoso": {
+        "health": 10,
+        "attacks_done": 10,
+        "is_alive": true
+    },
+    "MrYuak": {
+        "health": 100,
+        "attacks_done": 0,
+        "is_alive": true
+    }
+}
