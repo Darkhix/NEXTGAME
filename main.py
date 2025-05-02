@@ -1,3 +1,5 @@
+import os
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 import pygame
 import os
 import sys
@@ -6,7 +8,6 @@ import customtkinter as ctk
 from tkinter import messagebox
 from pygame import mixer
 from fighter import Fighter
-
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 pygame.init()
@@ -18,8 +19,7 @@ USERS_FILE = "users.json"
 current_user = None
 VALID_DOMAINS = ["@gmail.com", "@yahoo.cl", "@hotmail.com"]
 
-#Funciones usuario
-
+# Funciones usuario
 def load_users():
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, "r") as f:
@@ -44,8 +44,7 @@ def login_user(username, password):
     users = load_users()
     return username in users and users[username]["password"] == password
 
-# Crud
-
+# CRUD
 def get_user(username):
     users = load_users()
     return users.get(username)
@@ -69,8 +68,7 @@ def delete_user(username):
         return True
     return False
 
-#login y registro
-
+# Login y registro
 def iniciar_tkinter_login():
     def validar_login():
         usuario = username_entry.get()
@@ -161,20 +159,18 @@ def iniciar_tkinter_registro():
 
     registro.mainloop()
 
-#inicio de sesion
-
+# Inicio de sesión
 iniciar_tkinter_login()
 if not current_user:
     sys.exit()
 
-#Ajustes del juego
-
-resolutions = [(800, 600)]
+# Ajustes del juego
+resolutions = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
 res_index = 0
 music_volume = 50
 fx_volume = 50
 
-screen = pygame.display.set_mode(resolutions[res_index])
+screen = pygame.display.set_mode(resolutions[res_index], pygame.RESIZABLE)
 pygame.display.set_caption("Brawler")
 clock = pygame.time.Clock()
 FPS = 60
@@ -217,7 +213,18 @@ selected_index = 0
 options_items = ["Resolución", "Volumen Música", "Volumen FX", "Volver"]
 options_index = 0
 
-#partes de del juego(barra de vida, titulo, etc)
+current_music = None
+
+def play_music(path):
+    global current_music
+    if current_music != path:
+        pygame.mixer.music.stop()
+        pygame.mixer.music.load(path)
+        pygame.mixer.music.set_volume(music_volume / 100)
+        pygame.mixer.music.play(-1)
+        current_music = path
+
+play_music("assets/audio/music.mp3")
 
 def draw_text(text, font, color, x, y):
     img = font.render(text, True, color)
@@ -256,7 +263,7 @@ def draw_options():
             value = f"{music_volume}"
         elif item == "Volumen FX":
             value = f"{fx_volume}"
-        text = menu_font.render(f"{item}: {value}", True, color)
+        text = menu_font.render(f"{item}: {value}" if value else item, True, color)
         screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 200 + i * 80))
     pygame.display.flip()
 
@@ -267,8 +274,6 @@ def create_fighters():
     )
 
 fighter_1, fighter_2 = create_fighters()
-
-#Loop para que funcione el juego
 
 run = True
 while run:
@@ -289,13 +294,45 @@ while run:
                         intro_count = 3
                         score = [0, 0]
                         game_state = "playing"
+                        play_music("assets/audio/music.mp3")
                     elif menu_items[selected_index] == "Opciones":
                         game_state = "options"
                     elif menu_items[selected_index] == "Salir":
                         run = False
+
             elif game_state == "options":
-                if event.key == pygame.K_RETURN and options_items[options_index] == "Volver":
-                    game_state = "menu"
+                if event.key == pygame.K_UP:
+                    options_index = (options_index - 1) % len(options_items)
+                elif event.key == pygame.K_DOWN:
+                    options_index = (options_index + 1) % len(options_items)
+                elif event.key == pygame.K_LEFT:
+                    if options_items[options_index] == "Resolución":
+                        res_index = (res_index - 1) % len(resolutions)
+                        if res_index < 0:
+                            res_index = len(resolutions) - 1
+                        screen = pygame.display.set_mode(resolutions[res_index], pygame.RESIZABLE)
+                    elif options_items[options_index] == "Volumen Música":
+                        music_volume = max(0, music_volume - 10)
+                        pygame.mixer.music.set_volume(music_volume / 100)
+                    elif options_items[options_index] == "Volumen FX":
+                        fx_volume = max(0, fx_volume - 10)
+                        sword_fx.set_volume(fx_volume / 100)
+                        magic_fx.set_volume(fx_volume / 100)
+                elif event.key == pygame.K_RIGHT:
+                    if options_items[options_index] == "Resolución":
+                        res_index = (res_index + 1) % len(resolutions)
+                        screen = pygame.display.set_mode(resolutions[res_index], pygame.RESIZABLE)
+                    elif options_items[options_index] == "Volumen Música":
+                        music_volume = min(100, music_volume + 10)
+                        pygame.mixer.music.set_volume(music_volume / 100)
+                    elif options_items[options_index] == "Volumen FX":
+                        fx_volume = min(100, fx_volume + 10)
+                        sword_fx.set_volume(fx_volume / 100)
+                        magic_fx.set_volume(fx_volume / 100)
+                elif event.key == pygame.K_RETURN:
+                    if options_items[options_index] == "Volver":
+                        game_state = "menu"
+                        play_music("assets/audio/music.mp3")
 
     if game_state == "menu":
         draw_menu()
@@ -331,11 +368,34 @@ while run:
                 score[0] += 1
                 round_over = True
                 round_over_time = pygame.time.get_ticks()
+                
+            retry_option_selected = 0  # 0: Retry, 1: Volver al menú
         else:
             screen.blit(victory_img, (screen.get_width() // 2 - victory_img.get_width() // 2, 150))
-            if pygame.time.get_ticks() - round_over_time > ROUND_OVER_COOLDOWN:
-                round_over = False
-                game_state = "menu"
+                        # Mostrar opciones de Retry y Volver al menú
+            retry_font = pygame.font.SysFont(None, 40)
+            options = ["Reintentar", "Volver al menú"]
+            for i, opt in enumerate(options):
+                color = HIGHLIGHT if i == retry_option_selected else GRAY
+                text = retry_font.render(opt, True, color)
+                screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 300 + i * 50))
+
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_UP]:
+                retry_option_selected = (retry_option_selected - 1) % 2
+                pygame.time.wait(150)
+            elif keys[pygame.K_DOWN]:
+                retry_option_selected = (retry_option_selected + 1) % 2
+                pygame.time.wait(150)
+            elif keys[pygame.K_RETURN]:
+                if retry_option_selected == 0:
+                    fighter_1, fighter_2 = create_fighters()
+                    intro_count = 3
+                    round_over = False
+                else:
+                    game_state = "menu"
+                    round_over = False
+                play_music("assets/audio/music.mp3")
 
     pygame.display.update()
 
