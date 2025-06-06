@@ -1,5 +1,47 @@
 [
   {
+    "timestamp": "2025-06-06 09:04:00",
+    "p1_char": "Knight2",
+    "p2_char": "Guerrero",
+    "winner": "Guerrero"
+  },
+  {
+    "timestamp": "2025-06-06 08:50:29",
+    "p1_char": "Guerrero",
+    "p2_char": "Mago",
+    "winner": "Mago"
+  },
+  {
+    "timestamp": "2025-06-06 08:50:18",
+    "p1_char": "Guerrero",
+    "p2_char": "Mago",
+    "winner": "Mago"
+  },
+  {
+    "timestamp": "2025-06-06 08:49:17",
+    "p1_char": "Guerrero",
+    "p2_char": "Mago",
+    "winner": "Mago"
+  },
+  {
+    "timestamp": "2025-06-06 08:49:06",
+    "p1_char": "Guerrero",
+    "p2_char": "Mago",
+    "winner": "Mago"
+  },
+  {
+    "timestamp": "2025-06-06 08:48:56",
+    "p1_char": "Guerrero",
+    "p2_char": "Mago",
+    "winner": "Mago"
+  },
+  {
+    "timestamp": "2025-06-06 08:45:09",
+    "p1_char": "Guerrero",
+    "p2_char": "Mago",
+    "winner": "Mago"
+  },
+  {
     "timestamp": "2025-06-06 04:16:16",
     "p1_char": "Sword and Shield",
     "p2_char": "Guerrero",

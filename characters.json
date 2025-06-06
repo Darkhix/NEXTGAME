@@ -67,17 +67,17 @@
       "speed": 8
     },
     "special_moves": {
-      "K_r": {
-        "name": "Bola de Fuego",
-        "animation_row": 3,
-        "damage": 20,
-        "cooldown": 30
-      },
       "K_t": {
         "name": "Rayo Gelido",
         "animation_row": 4,
         "damage": 15,
         "cooldown": 25
+      },
+      "K_g": {
+        "name": "Bola de Fuego",
+        "animation_row": 3,
+        "damage": 20,
+        "cooldown": 30
       }
     }
   },

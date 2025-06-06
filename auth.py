@@ -2,7 +2,7 @@
 import os
 import json
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, TclError
 import config
 from PIL import Image, ImageTk
 import threading
@@ -22,7 +22,6 @@ def save_users(users):
     with open(config.USERS_FILE, 'w') as f:
         json.dump(users, f, indent=4)
 
-# --- NUEVA FUNCIÓN register_user ---
 def register_user(username, correo, password, character_class):
     users = load_users()
     if username in users:
@@ -100,30 +99,54 @@ def delete_user(username):
         return True
     return False
 
+
 class AuthUI:
     def __init__(self):
         self.current_user = None
         self.root = None
         self.is_running = True
 
-    def video_stream(self, video_label):
+    def video_stream(self, canvas):
         video_path = "assets/videos/login_bg.mp4"
         if not os.path.exists(video_path):
             print(f"Video no encontrado en {video_path}")
             return
+        
         cap = cv2.VideoCapture(video_path)
+        image_item = None # Para almacenar el ID del item de imagen en el canvas
+        
         while self.is_running and cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 continue
-            cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(cv2image)
-            img = img.resize((1280, 720), Image.Resampling.LANCZOS)
-            imgtk = ImageTk.PhotoImage(image=img)
-            video_label.configure(image=imgtk)
-            video_label.imgtk = imgtk
+
+            try:
+                if not self.root or not self.root.winfo_exists():
+                    break
+                
+                cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                pil_img = Image.fromarray(cv2image)
+                pil_img = pil_img.resize((1280, 720), Image.Resampling.LANCZOS)
+                
+                # Usamos ImageTk.PhotoImage porque es el formato que Canvas maneja mejor
+                imgtk = ImageTk.PhotoImage(image=pil_img)
+                
+                # Si es el primer frame, creamos la imagen en el canvas
+                if image_item is None:
+                    image_item = canvas.create_image(0, 0, anchor='nw', image=imgtk)
+                # Si ya existe, solo actualizamos la imagen del item existente
+                else:
+                    canvas.itemconfig(image_item, image=imgtk)
+                
+                # Guardamos una referencia para evitar que el recolector de basura la elimine
+                canvas.imgtk = imgtk
+
+            except (RuntimeError, TclError):
+                break
+            
             time.sleep(0.033)
+        
         cap.release()
 
     def on_closing(self):
@@ -147,10 +170,11 @@ class AuthUI:
         side_panel.pack(side="left", fill="y")
         side_panel.pack_propagate(False)
 
-        video_label = ctk.CTkLabel(self.root, text="")
-        video_label.pack(side="left", fill="both", expand=True)
+        # --- CAMBIO: Usamos CTkCanvas en lugar de CTkLabel ---
+        video_canvas = ctk.CTkCanvas(self.root, highlightthickness=0)
+        video_canvas.pack(side="left", fill="both", expand=True)
 
-        video_thread = threading.Thread(target=self.video_stream, args=(video_label,), daemon=True)
+        video_thread = threading.Thread(target=self.video_stream, args=(video_canvas,), daemon=True)
         video_thread.start()
 
         login_frame = ctk.CTkFrame(side_panel, fg_color="transparent")
@@ -219,7 +243,6 @@ class AuthUI:
                 messagebox.showerror('Error', 'Las contraseñas no coinciden.', parent=self.root)
                 return
 
-            # --- NUEVO BLOQUE DE MANEJO DE ERRORES ---
             resultado = register_user(username, correo, password, char_class)
             if resultado == 'exists':
                 messagebox.showerror('Error', 'Ese nombre de usuario ya existe.', parent=self.root)
@@ -241,7 +264,7 @@ class AuthUI:
                 messagebox.showerror('Error', 'Correo inválido. Solo dominios permitidos.', parent=self.root)
             elif resultado == 'ok':
                 messagebox.showinfo('Éxito', 'Registro exitoso. Ahora puedes iniciar sesión.', parent=self.root)
-                switch_view('login') # Vuelve a la vista de login
+                switch_view('login')
 
         switch_view('login')
         self.root.mainloop()

@@ -13,12 +13,22 @@
     },
     "Donoso": {
         "password": "123",
-        "character_class": "Guerrero"
+        "character_class": "Knight2"
     },
     "MrYuak": {
         "password": "1",
         "correo": "1@gmail.com",
         "character_class": "Guerrero",
+        "stats": {
+            "health": 100,
+            "attacks_done": 0,
+            "is_alive": true
+        }
+    },
+    "143123a": {
+        "password": "123nic",
+        "correo": "_ass2qa_@gmail.com",
+        "character_class": "Mago",
         "stats": {
             "health": 100,
             "attacks_done": 0,

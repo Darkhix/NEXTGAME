@@ -1,7 +1,7 @@
 {
     "Donoso": {
         "health": 0,
-        "attacks_done": 6,
+        "attacks_done": 5,
         "is_alive": false
     },
     "MrYuak": {
@@ -20,8 +20,8 @@
         "is_alive": true
     },
     "Guerrero": {
-        "health": 100,
-        "attacks_done": 0,
+        "health": 50,
+        "attacks_done": 5,
         "is_alive": true
     },
     "Knight2": {

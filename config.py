@@ -10,6 +10,20 @@ MUSIC_PATH = 'assets/audio/music.mp3'
 BG_IMG_PATH = 'assets/images/background/background.jpg'
 VICTORY_IMG_PATH = 'assets/images/icons/victory.png'
 
+# --- ESTRUCTURA DE MAPAS AÑADIDA ---
+# Aquí se definen los mapas que aparecerán en la pantalla de selección.
+# Debes crear las carpetas y archivos de imagen correspondientes.
+MAPS = {
+    'Night': {
+        'background': 'assets/images/background/map2.png',
+        'thumbnail': 'assets/images/background/map_thumbnails/map2.png'
+    },
+    'Desert': {
+        'background': 'assets/images/background/background.jpg',
+        'thumbnail': 'assets/images/background/map_thumbnails/background.jpg'
+    }
+}
+
 # --- Constantes del Juego ---
 FPS = 60
 RESOLUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
@@ -30,3 +44,5 @@ ROUND_OPTIONS = ['Reintentar', 'Volver al menú']
 CRUD_MENU_ITEMS = ['Añadir Personaje', 'Ver Datos', 'Editar Estadísticas', 'Gestionar Movimientos', 'Eliminar Personaje', 'Volver']
 MOVE_CRUD_OPTIONS = ['Añadir', 'Editar Tecla', 'Eliminar', 'Volver']
 FORBIDDEN_KEYS = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]
+
+
