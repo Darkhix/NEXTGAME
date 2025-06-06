@@ -1,0 +1,14 @@
+{
+  "Guerrero": {
+    "sprite_sheet_path": "assets/images/warrior/Sprites/warrior.png",
+    "sound_path": "assets/audio/sword.wav",
+    "data": [162, 4, [72, 56]],
+    "animation_steps": [10, 8, 1, 7, 7, 3, 7]
+  },
+  "Mago": {
+    "sprite_sheet_path": "assets/images/wizard/Sprites/wizard.png",
+    "sound_path": "assets/audio/magic.wav",
+    "data": [250, 3, [112, 107]],
+    "animation_steps": [8, 8, 1, 8, 8, 3, 7]
+  }
+}
