@@ -1,8 +1,8 @@
 {
     "Donoso": {
-        "health": 20,
-        "attacks_done": 1,
-        "is_alive": true
+        "health": 0,
+        "attacks_done": 6,
+        "is_alive": false
     },
     "MrYuak": {
         "health": 100,
@@ -15,8 +15,8 @@
         "is_alive": true
     },
     "Mago": {
-        "health": 55,
-        "attacks_done": 4,
+        "health": 80,
+        "attacks_done": 0,
         "is_alive": true
     },
     "Guerrero": {

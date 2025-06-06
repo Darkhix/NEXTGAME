@@ -23,7 +23,7 @@ def draw_health_bar(surface, health, x, y):
 
 def draw_menu(surface, font, items, selected_idx):
     surface.fill(config.BLACK)
-    title = font.render('Joseadores el juego', True, config.WHITE)
+    title = font.render('DARKHI GAME', True, config.WHITE)
     surface.blit(title, (surface.get_width() // 2 - title.get_width() // 2, 100))
     for i, item in enumerate(items):
         color = config.HIGHLIGHT if i == selected_idx else config.GRAY
@@ -106,6 +106,7 @@ def draw_move_crud(surface, bg_image, font, title_font, char_name, moves, move_i
     surface.blit(back_text, (panel_rect.left + 20, panel_rect.bottom - back_text.get_height() - 20))
 
 def draw_battle_history(surface, bg_image, font, title_font, history, selected_idx):
+    """Dibuja la pantalla del historial de batallas."""
     draw_bg(surface, bg_image)
     panel_rect = pygame.Rect(50, 40, surface.get_width() - 100, surface.get_height() - 80)
     draw_panel(surface, panel_rect)
@@ -116,26 +117,21 @@ def draw_battle_history(surface, bg_image, font, title_font, history, selected_i
     if not history:
         no_history_text = font.render("No hay batallas guardadas.", True, config.GRAY)
         surface.blit(no_history_text, (surface.get_width() // 2 - no_history_text.get_width() // 2, 250))
-    else:
-        for i, battle in enumerate(history):
-            y_pos = 150 + i * 50
-            if y_pos > panel_rect.bottom - 80:
-                break
+        return
 
-            color = config.HIGHLIGHT if i == selected_idx else config.GRAY
-            
-            winner = battle['winner']
-            p1 = battle['p1_char']
-            p2 = battle['p2_char']
-            timestamp = battle['timestamp']
+    for i, battle in enumerate(history):
+        y_pos = 150 + i * 50
+        if y_pos > panel_rect.bottom - 50:
+            break
 
-            battle_text_str = f"{timestamp} - {p1} vs {p2} - Ganador: {winner}"
-            
-            battle_text = font.render(battle_text_str, True, color)
-            surface.blit(battle_text, (panel_rect.left + 30, y_pos))
+        color = config.HIGHLIGHT if i == selected_idx else config.GRAY
+        
+        winner = battle['winner']
+        p1 = battle['p1_char']
+        p2 = battle['p2_char']
+        timestamp = battle['timestamp']
 
-    controls_font = pygame.font.SysFont(None, 24)
-    controls_text_str = "[A] Añadir | [E] Editar | [SUPR] Eliminar | [SHIFT+D] Borrar Todo | [ESC] Volver"
-    controls_text = controls_font.render(controls_text_str, True, config.WHITE)
-    controls_y = panel_rect.bottom - controls_text.get_height() - 15
-    surface.blit(controls_text, (surface.get_width() // 2 - controls_text.get_width() // 2, controls_y))
+        battle_text_str = f"{timestamp} - {p1} vs {p2} - Ganador: {winner}"
+        
+        battle_text = font.render(battle_text_str, True, color)
+        surface.blit(battle_text, (panel_rect.left + 30, y_pos))

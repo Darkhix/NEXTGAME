@@ -1,5 +1,23 @@
 [
   {
+    "timestamp": "2025-06-06 04:16:16",
+    "p1_char": "Sword and Shield",
+    "p2_char": "Guerrero",
+    "winner": "Guerrero"
+  },
+  {
+    "timestamp": "2025-06-06 04:16:03",
+    "p1_char": "Guerrero",
+    "p2_char": "Mago",
+    "winner": "Mago"
+  },
+  {
+    "timestamp": "2025-06-06 03:45:21",
+    "p1_char": "Knight2",
+    "p2_char": "Guerrero",
+    "winner": "Guerrero"
+  },
+  {
     "timestamp": "2025-06-06 03:03:09",
     "p1_char": "Mago",
     "p2_char": "Guerrero",
