@@ -1,8 +1,8 @@
 {
     "Donoso": {
-        "health": 10,
-        "attacks_done": 10,
-        "is_alive": true
+        "health": 0,
+        "attacks_done": 5,
+        "is_alive": false
     },
     "MrYuak": {
         "health": 100,

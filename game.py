@@ -16,7 +16,6 @@ from pygame import mixer
 # ==============================================================================
 
 def load_characters():
-    """Carga los personajes desde el archivo JSON."""
     try:
         with open(config.CHARACTERS_FILE, 'r') as f:
             return json.load(f)
@@ -24,16 +23,13 @@ def load_characters():
         return {}
 
 def save_characters(characters):
-    """Guarda los personajes en el archivo JSON."""
     with open(config.CHARACTERS_FILE, 'w') as f:
         json.dump(characters, f, indent=2)
 
 class CharacterForm(ctk.CTkToplevel):
-    """Ventana de formulario para Crear o Editar un personaje."""
-    # --- MODIFICADO: __init__ ahora guarda una referencia a la ventana raíz ---
     def __init__(self, master, callback, character_data=None, character_name=None):
         super().__init__(master)
-        self.root = master  # Guardamos la referencia a la ventana raíz (que estará oculta)
+        self.root = master
         self.callback = callback
         self.character_data = character_data
         self.character_name = character_name
@@ -41,18 +37,13 @@ class CharacterForm(ctk.CTkToplevel):
         self.geometry("500x600")
         self.grid_columnconfigure(1, weight=1)
         self.fields = {}
-        
-        # --- MODIFICADO: Se añade un manejador para el botón 'X' de la ventana ---
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-
         self.create_widgets()
         if self.character_data:
             self.fill_form()
         self.grab_set()
 
-    # --- NUEVA FUNCIÓN: Se ejecuta al presionar la 'X' para cerrar ---
     def on_closing(self):
-        """Destruye la ventana raíz oculta al cerrar el formulario."""
         self.root.destroy()
 
     def create_widgets(self):
@@ -67,15 +58,15 @@ class CharacterForm(ctk.CTkToplevel):
             entry = ctk.CTkEntry(self)
             entry.grid(row=i, column=1, padx=10, pady=5, sticky="ew")
             self.fields[key] = entry
-        save_button = ctk.CTkButton(self, text="Guardar", command=self.save)
-        save_button.grid(row=len(field_map), columnspan=2, pady=20)
+        self.save_button = ctk.CTkButton(self, text="Guardar", command=self.save)
+        self.save_button.grid(row=len(field_map), columnspan=2, pady=20)
 
     def fill_form(self):
-        # Si es modo edición, deshabilita el campo de nombre
         if self.character_name:
             self.fields["nombre"].insert(0, self.character_name)
-            self.fields["nombre"].configure(state="disabled")
-        
+            for key in self.fields:
+                self.fields[key].configure(state="disabled")
+            self.save_button.configure(state="disabled", text="Datos Bloqueados")
         self.fields["rutasprite"].insert(0, self.character_data["sprite_sheet_path"])
         self.fields["rutasonido"].insert(0, self.character_data["sound_path"])
         self.fields["tamaño"].insert(0, str(self.character_data["data"][0]))
@@ -84,54 +75,108 @@ class CharacterForm(ctk.CTkToplevel):
         self.fields["offsety"].insert(0, str(self.character_data["data"][2][1]))
         self.fields["pasos"].insert(0, ", ".join(map(str, self.character_data["animation_steps"])))
 
-    # --- MODIFICADO: El método save ahora también destruye la ventana raíz ---
     def save(self):
         try:
-            name_entry = self.fields["nombre"]
-            name = name_entry.get() if name_entry.cget("state") == "normal" else self.character_name
+            name = self.fields["nombre"].get()
             if not name:
                 messagebox.showerror("Error", "El nombre no puede estar vacío.")
                 return
+            sprite_path = self.fields["rutasprite"].get()
+            sound_path = self.fields["rutasonido"].get()
+            try:
+                pygame.image.load(sprite_path)
+                pygame.mixer.Sound(sound_path)
+            except pygame.error as e:
+                messagebox.showerror("Error de Archivo", f"No se pudo cargar un asset. Verifica las rutas.\n\nError: {e}")
+                return
             new_data = {
-                "sprite_sheet_path": self.fields["rutasprite"].get(),
-                "sound_path": self.fields["rutasonido"].get(),
+                "sprite_sheet_path": sprite_path, "sound_path": sound_path,
                 "data": [int(self.fields["tamaño"].get()), int(self.fields["escala"].get()), [int(self.fields["offsetx"].get()), int(self.fields["offsety"].get())]],
-                "animation_steps": [int(step.strip()) for step in self.fields["pasos"].get().split(',')]
+                "animation_steps": [int(step.strip()) for step in self.fields["pasos"].get().split(',')],
+                "stats": {"health": 100, "damage": 10, "speed": 10} # Stats por defecto para nuevos personajes
             }
             characters = load_characters()
-            # Si estamos editando y el nombre ha cambiado (lo cual no debería pasar con el campo deshabilitado, pero por seguridad)
             if self.character_name and self.character_name != name:
                 del characters[self.character_name]
-
             characters[name] = new_data
             save_characters(characters)
             messagebox.showinfo("Éxito", f"Personaje '{name}' guardado correctamente.")
             self.callback()
-            self.root.destroy() # Destruye la ventana raíz oculta
+            self.root.destroy()
         except ValueError:
-            messagebox.showerror("Error", "Por favor, introduce números válidos en los campos numéricos.")
+            messagebox.showerror("Error de Valor", "Por favor, introduce números válidos.")
         except Exception as e:
-            messagebox.showerror("Error", f"Ocurrió un error: {e}")
+            messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
+
+# --- NUEVA CLASE: Formulario para editar estadísticas ---
+class StatEditForm(ctk.CTkToplevel):
+    def __init__(self, master, callback, character_name):
+        super().__init__(master)
+        self.root = master
+        self.callback = callback
+        self.character_name = character_name
+        self.title(f"Editar Stats de {character_name}")
+        self.geometry("400x300")
+        self.grid_columnconfigure(1, weight=1)
+        self.fields = {}
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.create_widgets()
+        self.fill_form()
+        self.grab_set()
+
+    def on_closing(self):
+        self.root.destroy()
+        
+    def create_widgets(self):
+        self.character_data = load_characters()[self.character_name]
+        field_map = {"health": "Vida", "damage": "Daño", "speed": "Velocidad"}
+        for i, (key, label_text) in enumerate(field_map.items()):
+            label = ctk.CTkLabel(self, text=label_text)
+            label.grid(row=i, column=0, padx=10, pady=10, sticky="w")
+            entry = ctk.CTkEntry(self)
+            entry.grid(row=i, column=1, padx=10, pady=10, sticky="ew")
+            self.fields[key] = entry
+        save_button = ctk.CTkButton(self, text="Guardar Stats", command=self.save)
+        save_button.grid(row=len(field_map), columnspan=2, pady=20)
+
+    def fill_form(self):
+        stats = self.character_data["stats"]
+        self.fields["health"].insert(0, str(stats.get("health", 100)))
+        self.fields["damage"].insert(0, str(stats.get("damage", 10)))
+        self.fields["speed"].insert(0, str(stats.get("speed", 10)))
+
+    def save(self):
+        try:
+            characters = load_characters()
+            stats = {
+                "health": int(self.fields["health"].get()),
+                "damage": int(self.fields["damage"].get()),
+                "speed": int(self.fields["speed"].get())
+            }
+            characters[self.character_name]["stats"] = stats
+            save_characters(characters)
+            messagebox.showinfo("Éxito", f"Estadísticas de '{self.character_name}' guardadas.")
+            self.callback()
+            self.root.destroy()
+        except ValueError:
+            messagebox.showerror("Error de Valor", "Por favor, introduce números válidos.")
+        except Exception as e:
+            messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
 
 # ==============================================================================
 # La clase Game
 # ==============================================================================
-
 class Game:
     def __init__(self, username, user_data):
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
         mixer.init()
-
         self.username = username
         self.user_data = user_data
-        
         self.all_characters_data = load_characters()
-        
         if not self.all_characters_data:
-            messagebox.showerror("Error Crítico", "No hay personajes definidos en characters.json.")
+            messagebox.showerror("Error Crítico", "No hay personajes definidos.")
             sys.exit()
-            
         self.character_class = user_data.get('character_class', list(self.all_characters_data.keys())[0])
         self.res_index = 0
         self.screen = pygame.display.set_mode(config.RESOLUTIONS[self.res_index], pygame.RESIZABLE)
@@ -139,13 +184,11 @@ class Game:
         self.clock = pygame.time.Clock()
         self.load_general_assets()
         self.loaded_character_assets = {} 
-        self.music_volume = 50
-        self.fx_volume = 50
+        self.music_volume, self.fx_volume = 50, 50
         self.update_volumes()
         self.game_state = 'menu'
         self.menu_idx, self.options_idx, self.char_select_idx, self.round_sel_idx = 0, 0, 0, 0
-        self.crud_char_idx = 0
-        self.crud_opt_idx = 0
+        self.crud_char_idx, self.crud_opt_idx = 0, 0
         self.fighter_1, self.fighter_2 = None, None
         self.score = [0, 0]
         self.round_over = False
@@ -168,10 +211,15 @@ class Game:
     
     def get_character_assets(self, char_name):
         if char_name not in self.loaded_character_assets:
-            char_data = self.all_characters_data[char_name]
-            sprite_sheet = pygame.image.load(char_data["sprite_sheet_path"]).convert_alpha()
-            sound = mixer.Sound(char_data["sound_path"])
-            self.loaded_character_assets[char_name] = {"sprite_sheet": sprite_sheet, "sound": sound}
+            try:
+                char_data = self.all_characters_data[char_name]
+                sprite_sheet = pygame.image.load(char_data["sprite_sheet_path"]).convert_alpha()
+                sound = mixer.Sound(char_data["sound_path"])
+                self.loaded_character_assets[char_name] = {"sprite_sheet": sprite_sheet, "sound": sound}
+            except pygame.error as e:
+                messagebox.showerror("Error de Carga", f"No se pudo cargar assets para '{char_name}'.\nError: {e}")
+                pygame.quit()
+                sys.exit()
         return self.loaded_character_assets[char_name]
 
     def update_volumes(self):
@@ -184,16 +232,19 @@ class Game:
         mixer.music.load(path)
         mixer.music.play(-1, 0.0, 5000)
 
+    # --- MODIFICADO: Pasa las stats al crear el Fighter ---
     def create_fighters(self):
         player_char_name = self.character_class
         player_char_data = self.all_characters_data[player_char_name]
         player_assets = self.get_character_assets(player_char_name)
-        self.fighter_1 = Fighter(1, 200, 310, False, player_char_data["data"], player_assets["sprite_sheet"], player_char_data["animation_steps"], player_assets["sound"], username=self.username)
+        self.fighter_1 = Fighter(1, 200, 310, False, player_char_data["data"], player_assets["sprite_sheet"], player_char_data["animation_steps"], player_assets["sound"], player_char_data["stats"], username=self.username)
+        
         ai_options = [name for name in self.all_characters_data if name != player_char_name]
         ai_char_name = ai_options[0] if ai_options else player_char_name
         ai_char_data = self.all_characters_data[ai_char_name]
         ai_assets = self.get_character_assets(ai_char_name)
-        self.fighter_2 = Fighter(2, 700, 310, True, ai_char_data["data"], ai_assets["sprite_sheet"], ai_char_data["animation_steps"], ai_assets["sound"], ai=True)
+        self.fighter_2 = Fighter(2, 700, 310, True, ai_char_data["data"], ai_assets["sprite_sheet"], ai_char_data["animation_steps"], ai_assets["sound"], ai_char_data["stats"], ai=True)
+        
         self.update_volumes()
 
     def reset_round(self):
@@ -210,8 +261,7 @@ class Game:
 
     def handle_events(self):
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(), sys.exit()
+            if event.type == pygame.QUIT: pygame.quit(), sys.exit()
             if event.type == pygame.KEYDOWN:
                 if self.game_state == 'menu': self.handle_menu_keys(event.key)
                 elif self.game_state == 'character_crud': self.handle_crud_keys(event.key)
@@ -231,21 +281,13 @@ class Game:
         elif key == pygame.K_DOWN: self.menu_idx = (self.menu_idx + 1) % len(config.MENU_ITEMS)
         elif key == pygame.K_RETURN:
             selected = config.MENU_ITEMS[self.menu_idx]
-            if selected == 'Jugar':
-                self.reset_round()
-                self.score = [0, 0]
-                self.game_state = 'playing'
-            elif selected == 'Personaje':
-                self.game_state = 'character_select'
-                self.char_select_idx = list(self.all_characters_data.keys()).index(self.character_class)
-            elif selected == 'Administrar Personajes':
-                self.game_state = 'character_crud'
-                self.crud_char_idx = 0
-                self.crud_opt_idx = 0
+            if selected == 'Jugar': self.game_state = 'playing'; self.reset_round()
+            elif selected == 'Personaje': self.game_state = 'character_select'; self.char_select_idx = list(self.all_characters_data.keys()).index(self.character_class)
+            elif selected == 'Administrar Personajes': self.game_state = 'character_crud'; self.crud_char_idx, self.crud_opt_idx = 0, 0
             elif selected == 'Opciones': self.game_state = 'options'
             elif selected == 'Salir': pygame.quit(), sys.exit()
 
-    # --- MODIFICADO: Ahora creamos y manejamos una ventana raíz oculta ---
+    # --- MODIFICADO: Maneja la nueva opción "Editar Estadísticas" ---
     def handle_crud_keys(self, key):
         char_names = list(self.all_characters_data.keys())
         if key == pygame.K_UP: self.crud_char_idx = (self.crud_char_idx - 1) % len(char_names) if char_names else 0
@@ -256,28 +298,32 @@ class Game:
             selected_option = config.CRUD_MENU_ITEMS[self.crud_opt_idx]
             selected_char_name = char_names[self.crud_char_idx] if char_names else None
             
-            if selected_option in ['Añadir', 'Editar']:
-                if selected_option == 'Editar' and not selected_char_name:
-                    messagebox.showwarning("Atención", "No hay personajes para editar.")
-                    return
+            if not selected_char_name and selected_option != 'Añadir' and selected_option != 'Volver':
+                 messagebox.showwarning("Atención", "No hay personajes para seleccionar.")
+                 return
 
-                # Crear y ocultar la ventana raíz temporal
-                root = ctk.CTk()
-                root.withdraw()
-
-                char_data = self.all_characters_data.get(selected_char_name) if selected_option == 'Editar' else None
+            if selected_option == 'Añadir':
+                root = ctk.CTk(); root.withdraw()
+                CharacterForm(root, self.refresh_character_data)
+                root.mainloop()
+            
+            elif selected_option == 'Editar':
+                char_data = self.all_characters_data.get(selected_char_name)
+                root = ctk.CTk(); root.withdraw()
                 CharacterForm(root, self.refresh_character_data, char_data, selected_char_name)
-                
-                root.mainloop() # El bucle se detiene aquí hasta que el formulario se cierre
+                root.mainloop()
+            
+            elif selected_option == 'Editar Estadísticas':
+                root = ctk.CTk(); root.withdraw()
+                StatEditForm(root, self.refresh_character_data, selected_char_name)
+                root.mainloop()
 
             elif selected_option == 'Eliminar':
-                if selected_char_name:
-                    if messagebox.askyesno("Confirmar", f"¿Seguro que quieres eliminar a {selected_char_name}?"):
-                        del self.all_characters_data[selected_char_name]
-                        save_characters(self.all_characters_data)
-                        self.refresh_character_data()
-                else:
-                    messagebox.showwarning("Atención", "No hay personajes para eliminar.")
+                if messagebox.askyesno("Confirmar", f"¿Seguro que quieres eliminar a {selected_char_name}?"):
+                    del self.all_characters_data[selected_char_name]
+                    save_characters(self.all_characters_data)
+                    self.refresh_character_data()
+
             elif selected_option == 'Volver':
                 self.game_state = 'menu'
 
@@ -298,24 +344,18 @@ class Game:
         if key == pygame.K_UP: self.options_idx = (self.options_idx - 1) % len(config.OPTIONS_ITEMS)
         elif key == pygame.K_DOWN: self.options_idx = (self.options_idx + 1) % len(config.OPTIONS_ITEMS)
         elif key == pygame.K_LEFT:
-            if opt == 'Resolución':
-                self.res_index = (self.res_index - 1) % len(config.RESOLUTIONS)
-                self.screen = pygame.display.set_mode(config.RESOLUTIONS[self.res_index], pygame.RESIZABLE)
+            if opt == 'Resolución': self.res_index = (self.res_index - 1) % len(config.RESOLUTIONS); self.screen = pygame.display.set_mode(config.RESOLUTIONS[self.res_index], pygame.RESIZABLE)
             elif opt == 'Volumen Música': self.music_volume = max(0, self.music_volume - 10)
             elif opt == 'Volumen FX': self.fx_volume = max(0, self.fx_volume - 10)
             self.update_volumes()
         elif key == pygame.K_RIGHT:
-            if opt == 'Resolución':
-                self.res_index = (self.res_index + 1) % len(config.RESOLUTIONS)
-                self.screen = pygame.display.set_mode(config.RESOLUTIONS[self.res_index], pygame.RESIZABLE)
+            if opt == 'Resolución': self.res_index = (self.res_index + 1) % len(config.RESOLUTIONS); self.screen = pygame.display.set_mode(config.RESOLUTIONS[self.res_index], pygame.RESIZABLE)
             elif opt == 'Volumen Música': self.music_volume = min(100, self.music_volume + 10)
             elif opt == 'Volumen FX': self.fx_volume = min(100, self.fx_volume + 10)
             self.update_volumes()
         elif key == pygame.K_RETURN:
             if opt == 'Eliminar Cuenta':
-                if messagebox.askyesno('Eliminar Cuenta', '¿Seguro? Esta acción es irreversible.'):
-                    auth.delete_user(self.username)
-                    pygame.quit(), sys.exit()
+                if messagebox.askyesno('Eliminar Cuenta', '¿Seguro?'): auth.delete_user(self.username); pygame.quit(), sys.exit()
             elif opt == 'Volver': self.game_state = 'menu'
             
     def handle_round_over_keys(self, key):
@@ -326,17 +366,13 @@ class Game:
             else: self.game_state = 'menu'
 
     def draw_scenes(self):
-        if self.game_state == 'menu':
-            ui.draw_menu(self.screen, self.menu_font, config.MENU_ITEMS, self.menu_idx)
-        elif self.game_state == 'character_crud':
-            ui.draw_character_crud(self.screen, self.bg_image, self.menu_font, self.title_font, list(self.all_characters_data.keys()), config.CRUD_MENU_ITEMS, self.crud_char_idx, self.crud_opt_idx)
-        elif self.game_state == 'character_select':
-            ui.draw_character_select(self.screen, self.menu_font, list(self.all_characters_data.keys()), self.char_select_idx)
+        if self.game_state == 'menu': ui.draw_menu(self.screen, self.menu_font, config.MENU_ITEMS, self.menu_idx)
+        elif self.game_state == 'character_crud': ui.draw_character_crud(self.screen, self.bg_image, self.menu_font, self.title_font, list(self.all_characters_data.keys()), config.CRUD_MENU_ITEMS, self.crud_char_idx, self.crud_opt_idx)
+        elif self.game_state == 'character_select': ui.draw_character_select(self.screen, self.menu_font, list(self.all_characters_data.keys()), self.char_select_idx)
         elif self.game_state == 'options':
             values = {'Resolución': f"{config.RESOLUTIONS[self.res_index][0]}x{config.RESOLUTIONS[self.res_index][1]}", 'Volumen Música': str(self.music_volume), 'Volumen FX': str(self.fx_volume)}
             ui.draw_options(self.screen, self.menu_font, config.OPTIONS_ITEMS, self.options_idx, values)
-        elif self.game_state == 'playing':
-            self.run_game_logic()
+        elif self.game_state == 'playing': self.run_game_logic()
 
     def run_game_logic(self):
         ui.draw_bg(self.screen, self.bg_image)
@@ -349,20 +385,12 @@ class Game:
             self.fighter_2.move(self.screen.get_width(), self.screen.get_height(), self.fighter_1, self.round_over)
         else:
             ui.draw_text(self.screen, str(self.intro_count), self.count_font, config.RED, self.screen.get_width() / 2 - 20, self.screen.get_height() / 3)
-            if pygame.time.get_ticks() - self.last_count_update >= 1000:
-                self.intro_count -= 1
-                self.last_count_update = pygame.time.get_ticks()
-        self.fighter_1.update()
-        self.fighter_2.update()
-        self.fighter_1.draw(self.screen)
-        self.fighter_2.draw(self.screen)
+            if pygame.time.get_ticks() - self.last_count_update >= 1000: self.intro_count -= 1; self.last_count_update = pygame.time.get_ticks()
+        self.fighter_1.update(); self.fighter_2.update()
+        self.fighter_1.draw(self.screen); self.fighter_2.draw(self.screen)
         if not self.round_over:
-            if not self.fighter_1.alive:
-                self.score[1] += 1
-                self.round_over, self.round_over_time = True, pygame.time.get_ticks()
-            elif not self.fighter_2.alive:
-                self.score[0] += 1
-                self.round_over, self.round_over_time = True, pygame.time.get_ticks()
+            if not self.fighter_1.alive: self.score[1] += 1; self.round_over, self.round_over_time = True, pygame.time.get_ticks()
+            elif not self.fighter_2.alive: self.score[0] += 1; self.round_over, self.round_over_time = True, pygame.time.get_ticks()
         else:
             if pygame.time.get_ticks() - self.round_over_time > config.ROUND_COOLDOWN:
                 ui.draw_round_over_menu(self.screen, self.menu_font, config.ROUND_OPTIONS, self.round_sel_idx, self.victory_img)

@@ -6,7 +6,8 @@ import os
 class Fighter():
     JSON_PATH = 'usuarios.json'
 
-    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sound, ai=False, username=None):
+    # --- MODIFICADO: Se añade 'stats' al constructor ---
+    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sound, stats, ai=False, username=None):
         self.player = player
         self.size = data[0]
         self.image_scale = data[1]
@@ -17,10 +18,13 @@ class Fighter():
         self.animation_steps = animation_steps
         self.sound = sound
         self.username = username
-
         self.attacks_done = 0
-
         self.animation_list = self.load_images(sprite_sheet, animation_steps)
+
+        # --- MODIFICADO: Las estadísticas se cargan desde el nuevo parámetro ---
+        self.base_health = stats['health']
+        self.damage = stats['damage']
+        self.speed = stats['speed']
 
         self.action = 0
         self.frame_index = 0
@@ -34,12 +38,13 @@ class Fighter():
         self.attack_type = 0
         self.attack_cooldown = 0
         self.hit = False
-        self.health = 100
+        self.health = self.base_health # La vida inicial se basa en las stats
         self.alive = True
 
         if self.username:
             self.init_user_data()
 
+    # ... (init_user_data y save_user_data no cambian) ...
     def init_user_data(self):
         if not os.path.exists(Fighter.JSON_PATH):
             with open(Fighter.JSON_PATH, 'w') as f:
@@ -60,6 +65,7 @@ class Fighter():
         with open(Fighter.JSON_PATH, 'w') as f:
             json.dump(data, f, indent=4)
 
+
     def load_images(self, sprite_sheet, animation_steps):
         animation_list = []
         sheet_width, sheet_height = sprite_sheet.get_width(), sprite_sheet.get_height()
@@ -76,8 +82,9 @@ class Fighter():
             animation_list.append(temp_img_list if temp_img_list else [pygame.Surface((1, 1))])
         return animation_list
 
+    # --- MODIFICADO: Usa self.speed en lugar de una constante ---
     def move(self, screen_width, screen_height, target, round_over):
-        SPEED = 10
+        SPEED = self.speed # La velocidad ahora viene de las stats
         GRAVITY = 2
         dx = 0
         dy = 0
@@ -119,6 +126,7 @@ class Fighter():
             self.vel_y = -30
             self.jump_state = True
 
+    # --- MODIFICADO: Usa self.damage en lugar de un valor fijo ---
     def attack(self, target, attack_type):
         if self.attack_cooldown == 0 and not self.attacking and self.alive:
             self.attack_type = attack_type
@@ -127,10 +135,12 @@ class Fighter():
             self.sound.play()
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2 * self.rect.width, self.rect.height)
             if attacking_rect.colliderect(target.rect):
-                target.health -= 10
+                target.health -= self.damage # El daño ahora viene de las stats
                 target.hit = True
     
+    # ... (update, update_action y draw no cambian) ...
     def update(self):
+        # La vida se reinicia a la base del personaje
         if self.health <= 0:
             self.health, self.alive = 0, False
             self.update_action(6)
