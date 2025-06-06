@@ -2,53 +2,51 @@
   "Guerrero": {
     "sprite_sheet_path": "assets/images/warrior/Sprites/warrior.png",
     "sound_path": "assets/audio/sword.wav",
-    "data": [
-      162,
-      4,
-      [
-        72,
-        56
-      ]
-    ],
-    "animation_steps": [
-      10,
-      8,
-      1,
-      7,
-      7,
-      3,
-      7
-    ],
+    "data": [162, 4, [72, 56]],
+    "animation_steps": [10, 8, 1, 7, 7, 3, 7],
     "stats": {
       "health": 100,
       "damage": 12,
       "speed": 10
+    },
+    "special_moves": {
+      "K_r": {
+        "name": "Corte Rapido",
+        "animation_row": 3,
+        "damage": 12,
+        "cooldown": 20
+      },
+      "K_t": {
+        "name": "Estocada Fuerte",
+        "animation_row": 4,
+        "damage": 25,
+        "cooldown": 50
+      }
     }
   },
   "Mago": {
     "sprite_sheet_path": "assets/images/wizard/Sprites/wizard.png",
     "sound_path": "assets/audio/magic.wav",
-    "data": [
-      250,
-      3,
-      [
-        112,
-        107
-      ]
-    ],
-    "animation_steps": [
-      8,
-      8,
-      1,
-      8,
-      8,
-      3,
-      7
-    ],
+    "data": [250, 3, [112, 107]],
+    "animation_steps": [8, 8, 1, 8, 8, 3, 7],
     "stats": {
       "health": 80,
       "damage": 15,
-      "speed": 25
+      "speed": 8
+    },
+    "special_moves": {
+      "K_r": {
+        "name": "Bola de Fuego",
+        "animation_row": 3,
+        "damage": 20,
+        "cooldown": 30
+      },
+      "K_t": {
+        "name": "Rayo Gelido",
+        "animation_row": 4,
+        "damage": 15,
+        "cooldown": 25
+      }
     }
   }
 }
