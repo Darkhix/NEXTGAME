@@ -6,28 +6,37 @@ import os
 class Fighter():
     JSON_PATH = 'usuarios.json'
 
-    # --- MODIFICADO: Se añade 'special_moves' al constructor ---
-    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sound, stats, special_moves, ai=False, username=None):
+    def __init__(self, player, x, y, flip, data, animation_list, sound, stats, special_moves, ai=False, username=None):
         self.player = player
-        self.size = data[0]
-        self.image_scale = data[1]
-        self.offset = data[2]
+        # --- MODIFICADO: Lee el nuevo formato de 'data' con ancho y alto separados ---
+        self.frame_w = data[0]
+        self.frame_h = data[1]
+        self.image_scale = data[2]
+        self.offset = data[3]
+        
         self.flip = flip
-        self.ai = ai
-        self.sprite_sheet = sprite_sheet
-        self.animation_steps = animation_steps
+        self.animation_list = animation_list
         self.sound = sound
+        self.ai = ai
         self.username = username
-        self.attacks_done = 0
-        self.animation_list = self.load_images(sprite_sheet, animation_steps)
-
-        # Carga de estadísticas y movimientos
-        self.base_health = stats['health']
-        self.speed = stats['speed']
-        self.special_moves = special_moves # Guardamos los movimientos
-
+        
+        # Carga de estadísticas desde el diccionario
+        self.base_health = stats.get('health', 100)
+        self.speed = stats.get('speed', 10)
+        self.special_moves = special_moves
+        
         self.action = 0
         self.frame_index = 0
+        
+        # Red de seguridad para evitar crashes si una animación no existe
+        if not self.animation_list or self.action >= len(self.animation_list) or not self.animation_list[self.action]:
+            print(f"ADVERTENCIA: Animación 'Idle' (acción 0) no encontrada o vacía para un personaje.")
+            placeholder_surface = pygame.Surface((self.frame_w if self.frame_w > 0 else 50, self.frame_h if self.frame_h > 0 else 50))
+            placeholder_surface.fill((255, 0, 255))
+            while len(self.animation_list) <= self.action:
+                self.animation_list.append([])
+            self.animation_list[self.action] = [placeholder_surface]
+
         self.image = self.animation_list[self.action][self.frame_index]
         self.update_time = pygame.time.get_ticks()
         self.rect = pygame.Rect((x, y, 80, 180))
@@ -35,17 +44,17 @@ class Fighter():
         self.running = False
         self.jump_state = False
         self.attacking = False
-        self.attack_type = 0 # Ahora representa la fila de la animación
+        self.attack_type = 0
         self.attack_cooldown = 0
         self.hit = False
         self.health = self.base_health
         self.alive = True
+        self.attacks_done = 0
 
         if self.username:
             self.init_user_data()
 
     def init_user_data(self):
-        # ... (sin cambios)
         if not os.path.exists(Fighter.JSON_PATH):
             with open(Fighter.JSON_PATH, 'w') as f: json.dump({}, f)
         with open(Fighter.JSON_PATH, 'r') as f: data = json.load(f)
@@ -54,30 +63,12 @@ class Fighter():
             with open(Fighter.JSON_PATH, 'w') as f: json.dump(data, f, indent=4)
 
     def save_user_data(self):
-        # ... (sin cambios)
         if not self.username: return
         with open(Fighter.JSON_PATH, 'r') as f: data = json.load(f)
         data[self.username] = {"health": self.health, "attacks_done": self.attacks_done, "is_alive": self.alive}
         with open(Fighter.JSON_PATH, 'w') as f: json.dump(data, f, indent=4)
 
-    def load_images(self, sprite_sheet, animation_steps):
-        # ... (sin cambios)
-        animation_list = []
-        sheet_width, sheet_height = sprite_sheet.get_width(), sprite_sheet.get_height()
-        for y, frames in enumerate(animation_steps):
-            temp_img_list = []
-            for x in range(frames):
-                frame_x, frame_y = x * self.size, y * self.size
-                if frame_x + self.size <= sheet_width and frame_y + self.size <= sheet_height:
-                    temp_img = sprite_sheet.subsurface(pygame.Rect(frame_x, frame_y, self.size, self.size))
-                    temp_img = pygame.transform.scale(temp_img, (self.size * self.image_scale, self.size * self.image_scale))
-                    temp_img_list.append(temp_img)
-                else: break
-            animation_list.append(temp_img_list if temp_img_list else [pygame.Surface((1, 1))])
-        return animation_list
-
     def move(self, screen_width, screen_height, target, round_over):
-        # ... (la lógica de movimiento con self.speed no cambia) ...
         SPEED = self.speed
         GRAVITY = 2
         dx, dy = 0, 0
@@ -87,9 +78,9 @@ class Fighter():
                 if self.rect.centerx < target.rect.centerx - 30: dx = SPEED
                 elif self.rect.centerx > target.rect.centerx + 30: dx = -SPEED
                 if abs(self.rect.centerx - target.rect.centerx) < 150 and not self.attacking:
-                    # IA elige su primer movimiento disponible para atacar
-                    first_move_key = next(iter(self.special_moves))
-                    self.attack(target, first_move_key)
+                    if self.special_moves:
+                        first_move_key = next(iter(self.special_moves))
+                        self.attack(target, first_move_key)
             else:
                 key = pygame.key.get_pressed()
                 if key[pygame.K_a]: dx = -SPEED; self.running = True
@@ -99,68 +90,59 @@ class Fighter():
         if self.rect.left + dx < 0: dx = -self.rect.left
         if self.rect.right + dx > screen_width: dx = screen_width - self.rect.right
         if self.rect.bottom + dy > screen_height - 110:
-            self.vel_y = 0
-            self.jump_state = False
+            self.vel_y = 0; self.jump_state = False
             dy = screen_height - 110 - self.rect.bottom
         self.flip = target.rect.centerx < self.rect.centerx
         if self.attack_cooldown > 0: self.attack_cooldown -= 1
-        self.rect.x += dx
-        self.rect.y += dy
+        self.rect.x += dx; self.rect.y += dy
 
     def jump(self):
         if not self.jump_state and self.alive:
             self.vel_y = -30
             self.jump_state = True
 
-    # --- MODIFICADO: El método attack ahora usa la 'move_key' para buscar los datos del ataque ---
     def attack(self, target, move_key):
         if self.attack_cooldown == 0 and not self.attacking and self.alive:
             move_data = self.special_moves[move_key]
-            
             self.attacking = True
-            self.attack_type = move_data["animation_row"] # Usamos la fila de animación del JSON
+            self.attack_type = move_data["animation_row"]
             self.attacks_done += 1
             self.sound.play()
-            
             attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2 * self.rect.width, self.rect.height)
             if attacking_rect.colliderect(target.rect):
-                target.health -= move_data["damage"] # Usamos el daño del JSON
+                target.health -= move_data.get("damage", 10)
                 target.hit = True
-            
-            self.attack_cooldown = move_data["cooldown"] # Usamos el cooldown del JSON
+            self.attack_cooldown = move_data.get("cooldown", 20)
 
     def update(self):
-        if self.health <= 0:
-            self.health, self.alive = 0, False
-            self.update_action(6) # Animación de muerte
-        elif self.hit:
-            self.update_action(5) # Animación de golpe
-        elif self.attacking:
-            # --- MODIFICADO: La acción es directamente el attack_type (fila de animación) ---
-            self.update_action(self.attack_type)
-        elif self.jump_state:
-            self.update_action(2) # Animación de salto
-        elif self.running:
-            self.update_action(1) # Animación de correr
-        else:
-            self.update_action(0) # Animación idle
+        if self.health <= 0: self.health, self.alive = 0, False; self.update_action(6)
+        elif self.hit: self.update_action(5)
+        elif self.attacking: self.update_action(self.attack_type)
+        elif self.jump_state: self.update_action(2)
+        elif self.running: self.update_action(1)
+        else: self.update_action(0)
 
         animation_cooldown = 50
-        self.image = self.animation_list[self.action][self.frame_index]
-        if pygame.time.get_ticks() - self.update_time > animation_cooldown:
-            self.frame_index += 1
-            self.update_time = pygame.time.get_ticks()
+        
+        # Comprobación de seguridad para la animación actual
+        if self.action >= len(self.animation_list) or not self.animation_list[self.action]:
+            # Si la animación actual no es válida, la resetea a Idle para evitar un crash
+            self.update_action(0)
+            return
 
         if self.frame_index >= len(self.animation_list[self.action]):
             if not self.alive:
                 self.frame_index = len(self.animation_list[self.action]) - 1
             else:
                 self.frame_index = 0
-                if self.action >= 3: # Si la acción es un ataque
-                    self.attacking = False
-                if self.action == 5:
-                    self.hit = False
-                    self.attacking = False
+                if self.attacking: self.attacking = False
+                if self.hit: self.hit = False
+        
+        self.image = self.animation_list[self.action][self.frame_index]
+        if pygame.time.get_ticks() - self.update_time > animation_cooldown:
+            self.frame_index += 1
+            self.update_time = pygame.time.get_ticks()
+        
         self.save_user_data()
 
     def update_action(self, new_action):
@@ -168,7 +150,7 @@ class Fighter():
             self.action, self.frame_index, self.update_time = new_action, 0, pygame.time.get_ticks()
 
     def draw(self, surface):
-        # ... (sin cambios)
+        # El offset ahora usa el cuarto elemento del array 'data'
         img = pygame.transform.flip(self.image, self.flip, False)
         surface.blit(img, (self.rect.x - (self.offset[0] * self.image_scale), self.rect.y - (self.offset[1] * self.image_scale)))
         if self.username:
