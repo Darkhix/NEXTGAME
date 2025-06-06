@@ -52,3 +52,44 @@ def draw_round_over_menu(surface, font, items, selected_idx, victory_img):
         color = config.HIGHLIGHT if i == selected_idx else config.GRAY
         txt = font.render(item, True, color)
         surface.blit(txt, (surface.get_width() // 2 - txt.get_width() // 2, base_y + i * 60))
+
+
+# --- ESTA ES LA FUNCIÓN QUE FALTABA ---
+def draw_character_crud(surface, bg_image, font, title_font, characters, options, char_idx, opt_idx):
+    """Dibuja la pantalla de administración de personajes dentro de Pygame."""
+    draw_bg(surface, bg_image)
+    
+    # Título
+    title_text = title_font.render("Administrar Personajes", True, config.WHITE)
+    surface.blit(title_text, (surface.get_width() // 2 - title_text.get_width() // 2, 50))
+
+    # Columnas
+    char_col_x = 150
+    opt_col_x = surface.get_width() - 350
+    
+    # Lista de Personajes
+    list_title = font.render("Personajes", True, config.WHITE)
+    surface.blit(list_title, (char_col_x, 120))
+
+    for i, name in enumerate(characters):
+        color = config.HIGHLIGHT if i == char_idx else config.GRAY
+        char_text = font.render(name, True, color)
+        surface.blit(char_text, (char_col_x, 180 + i * 60))
+
+    # Opciones
+    options_title = font.render("Opciones", True, config.WHITE)
+    surface.blit(options_title, (opt_col_x, 120))
+    
+    for i, option in enumerate(options):
+        color = config.HIGHLIGHT if i == opt_idx else config.GRAY
+        opt_text = font.render(option, True, color)
+        surface.blit(opt_text, (opt_col_x, 180 + i * 60))
+
+    # Indicador de selección de personaje
+    if characters:
+        marker_y = (180 + char_idx * 60) + (font.get_height() // 2)
+        pygame.draw.polygon(surface, config.HIGHLIGHT, [
+            (char_col_x - 30, marker_y - 10), 
+            (char_col_x - 30, marker_y + 10), 
+            (char_col_x - 15, marker_y)
+        ])

@@ -27,3 +27,4 @@ HIGHLIGHT = (50, 150, 255)
 MENU_ITEMS = ['Jugar', 'Personaje', 'Administrar Personajes', 'Opciones', 'Salir']
 OPTIONS_ITEMS = ['Resolución', 'Volumen Música', 'Volumen FX', 'Eliminar Cuenta', 'Volver']
 ROUND_OPTIONS = ['Reintentar', 'Volver al menú']
+CRUD_MENU_ITEMS = ['Añadir', 'Editar', 'Eliminar', 'Volver'] # <-- ESTA ES LA LÍNEA QUE FALTABA
