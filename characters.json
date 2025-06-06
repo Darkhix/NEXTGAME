@@ -26,17 +26,17 @@
       "speed": 10
     },
     "special_moves": {
-      "K_r": {
-        "name": "Corte Rapido",
-        "animation_row": 3,
-        "damage": 12,
-        "cooldown": 20
-      },
       "K_t": {
         "name": "Estocada Fuerte",
         "animation_row": 4,
         "damage": 25,
         "cooldown": 50
+      },
+      "K_y": {
+        "name": "Corte Rapido",
+        "animation_row": 3,
+        "damage": 12,
+        "cooldown": 20
       }
     }
   },
@@ -119,40 +119,40 @@
     }
   },
   "Knight2": {
-  "sprite_sheet_path": "D:/TrabajoU/NEXTGAME-CRUD/assets/images/Two Handed Sword/two_handed_sword_spritesheet.png",
-  "sound_path": "assets/audio/sword.wav",
-  "data": [
-    100,
-    100,
-    4,
-    [
-      50,
-      20
-    ]
-  ],
-  "animation_steps": [
-    4,
-    8,
-    2,
-    2,
-    4,
-    4,
-    4,
-    0,
-    0
-  ],
-  "stats": {
-    "health": 120,
-    "damage": 8,
-    "speed": 7
-  },
-  "special_moves": {
-    "K_r": {
-      "name": "Golpe de Escudo",
-      "animation_row": 4,
-      "damage": 10,
-      "cooldown": 25
+    "sprite_sheet_path": "D:/TrabajoU/NEXTGAME-CRUD/assets/images/Two Handed Sword/two_handed_sword_spritesheet.png",
+    "sound_path": "assets/audio/sword.wav",
+    "data": [
+      100,
+      100,
+      4,
+      [
+        50,
+        20
+      ]
+    ],
+    "animation_steps": [
+      4,
+      8,
+      2,
+      2,
+      4,
+      4,
+      4,
+      0,
+      0
+    ],
+    "stats": {
+      "health": 120,
+      "damage": 8,
+      "speed": 7
+    },
+    "special_moves": {
+      "K_r": {
+        "name": "Golpe de Escudo",
+        "animation_row": 4,
+        "damage": 10,
+        "cooldown": 25
+      }
     }
-  }
   }
 }

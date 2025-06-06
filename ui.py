@@ -41,7 +41,6 @@ def draw_options(surface, font, items, selected_idx, values):
         txt = font.render(text_to_render, True, color)
         surface.blit(txt, (surface.get_width() // 2 - txt.get_width() // 2, 200 + i * 80))
 
-# --- MODIFICADO: Ahora dibuja la lista a la izquierda y el personaje a la derecha ---
 def draw_character_select(surface, bg_image, font, title_font, items, selected_idx, preview_fighter):
     draw_bg(surface, bg_image)
     panel_rect = pygame.Rect(50, 40, surface.get_width() - 100, surface.get_height() - 80)
@@ -50,14 +49,12 @@ def draw_character_select(surface, bg_image, font, title_font, items, selected_i
     title_text = title_font.render('Selecciona tu Personaje', True, config.WHITE)
     surface.blit(title_text, (surface.get_width() // 2 - title_text.get_width() // 2, 70))
 
-    # Dibujar la lista de nombres a la izquierda
     list_x = panel_rect.left + 50
     for i, char_name in enumerate(items):
         color = config.HIGHLIGHT if i == selected_idx else config.GRAY
         txt = font.render(char_name, True, color)
         surface.blit(txt, (list_x, 180 + i * 70))
 
-    # Dibujar el personaje de vista previa a la derecha
     if preview_fighter:
         preview_fighter.draw(surface)
 
@@ -107,3 +104,38 @@ def draw_move_crud(surface, bg_image, font, title_font, char_name, moves, move_i
         surface.blit(prompt_text, (prompt_x, prompt_y))
     back_text = font.render("Presiona ESC para Volver", True, config.GRAY)
     surface.blit(back_text, (panel_rect.left + 20, panel_rect.bottom - back_text.get_height() - 20))
+
+def draw_battle_history(surface, bg_image, font, title_font, history, selected_idx):
+    draw_bg(surface, bg_image)
+    panel_rect = pygame.Rect(50, 40, surface.get_width() - 100, surface.get_height() - 80)
+    draw_panel(surface, panel_rect)
+    
+    title_text = title_font.render("Historial de Batallas", True, config.WHITE)
+    surface.blit(title_text, (surface.get_width() // 2 - title_text.get_width() // 2, 70))
+
+    if not history:
+        no_history_text = font.render("No hay batallas guardadas.", True, config.GRAY)
+        surface.blit(no_history_text, (surface.get_width() // 2 - no_history_text.get_width() // 2, 250))
+    else:
+        for i, battle in enumerate(history):
+            y_pos = 150 + i * 50
+            if y_pos > panel_rect.bottom - 80:
+                break
+
+            color = config.HIGHLIGHT if i == selected_idx else config.GRAY
+            
+            winner = battle['winner']
+            p1 = battle['p1_char']
+            p2 = battle['p2_char']
+            timestamp = battle['timestamp']
+
+            battle_text_str = f"{timestamp} - {p1} vs {p2} - Ganador: {winner}"
+            
+            battle_text = font.render(battle_text_str, True, color)
+            surface.blit(battle_text, (panel_rect.left + 30, y_pos))
+
+    controls_font = pygame.font.SysFont(None, 24)
+    controls_text_str = "[A] Añadir | [E] Editar | [SUPR] Eliminar | [SHIFT+D] Borrar Todo | [ESC] Volver"
+    controls_text = controls_font.render(controls_text_str, True, config.WHITE)
+    controls_y = panel_rect.bottom - controls_text.get_height() - 15
+    surface.blit(controls_text, (surface.get_width() // 2 - controls_text.get_width() // 2, controls_y))

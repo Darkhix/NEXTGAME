@@ -6,9 +6,11 @@ import json
 import customtkinter as ctk
 from tkinter import messagebox
 from PIL import Image
+from datetime import datetime
 import config
 import ui
 import auth
+from auth import load_users, save_users, delete_user # Import specific functions
 from fighter import Fighter
 from pygame import mixer
 
@@ -16,21 +18,20 @@ from pygame import mixer
 # INICIO DEL CÓDIGO DE GESTIÓN
 # ==============================================================================
 
-def load_characters():
+def load_json_data(file_path, default_data):
     try:
-        with open(config.CHARACTERS_FILE, 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+        with open(file_path, 'r', encoding='utf-8') as f: return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError): return default_data
 
-def save_characters(characters):
-    with open(config.CHARACTERS_FILE, 'w') as f:
-        json.dump(characters, f, indent=2)
+def save_json_data(file_path, data):
+    with open(file_path, 'w', encoding='utf-8') as f: json.dump(data, f, indent=2, ensure_ascii=False)
+
+def load_characters(): return load_json_data(config.CHARACTERS_FILE, {})
+def save_characters(characters): save_json_data(config.CHARACTERS_FILE, characters)
 
 def _create_spritesheet_from_files(base_path, scale, offset):
     if not os.path.isdir(base_path):
-        messagebox.showerror("Error", f"La carpeta base no existe:\n{base_path}")
-        return None
+        messagebox.showerror("Error", f"La carpeta base no existe:\n{base_path}"); return None
     all_animations, max_frame_w, max_frame_h, max_frames_per_row, animation_steps = [], 0, 0, 0, []
     animation_folder_names = ['Idle', 'Run', 'Jump', 'Fall', 'Attack', 'Take Hit', 'Death', 'Block', 'Hold Shield']
     for anim_name in animation_folder_names:
@@ -41,14 +42,14 @@ def _create_spritesheet_from_files(base_path, scale, offset):
             for filename in filenames:
                 if filename.lower().endswith('.png'):
                     try:
-                        img = Image.open(os.path.join(anim_path, filename))
-                        current_anim_frames.append(img); max_frame_w = max(max_frame_w, img.width); max_frame_h = max(max_frame_h, img.height)
+                        img = Image.open(os.path.join(anim_path, filename)); current_anim_frames.append(img)
+                        max_frame_w = max(max_frame_w, img.width); max_frame_h = max(max_frame_h, img.height)
                     except Exception as e: print(f"Advertencia: No se pudo cargar {filename}: {e}")
         all_animations.append(current_anim_frames)
         num_frames = len(current_anim_frames)
         animation_steps.append(num_frames); max_frames_per_row = max(max_frames_per_row, num_frames)
     if max_frame_w == 0:
-        messagebox.showerror("Error", "No se encontraron imágenes válidas en las carpetas."); return None
+        messagebox.showerror("Error", "No se encontraron imágenes válidas."); return None
     sheet_width = max_frame_w * max_frames_per_row; sheet_height = max_frame_h * len(animation_folder_names)
     final_sheet = Image.new('RGBA', (sheet_width, sheet_height), (0, 0, 0, 0))
     for y, anim_frames in enumerate(all_animations):
@@ -59,16 +60,19 @@ def _create_spritesheet_from_files(base_path, scale, offset):
     final_sheet.save(output_path)
     return {"sprite_sheet_path": output_path.replace("\\", "/"), "data": [max_frame_w, max_frame_h, scale, offset], "animation_steps": animation_steps}
 
+def record_battle_result(winner, p1_char, p2_char):
+    history = load_json_data("battle_history.json", [])
+    new_record = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "p1_char": p1_char, "p2_char": p2_char, "winner": winner}
+    history.insert(0, new_record)
+    if len(history) > 50: history = history[:50]
+    save_json_data("battle_history.json", history)
+
 class CharacterForm(ctk.CTkToplevel):
     def __init__(self, master, callback, character_data=None, character_name=None, read_only=False):
         super().__init__(master)
-        self.root = master
-        self.callback = callback
-        self.character_data = character_data
-        self.character_name = character_name
-        form_title = "Añadir Personaje" if not character_name else f"Datos de {character_name}"
-        self.title(form_title)
-        self.geometry("550x650"); self.grid_columnconfigure(1, weight=1); self.fields = {}; self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.root, self.callback, self.character_data, self.character_name = master, callback, character_data, character_name
+        self.title("Añadir Personaje" if not character_name else f"Datos de {character_name}")
+        self.geometry("550x700"); self.grid_columnconfigure(1, weight=1); self.fields = {}; self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.create_widgets()
         if self.character_data: self.fill_form()
         if read_only:
@@ -77,7 +81,6 @@ class CharacterForm(ctk.CTkToplevel):
             self.save_button.configure(state="disabled", text="Cerrar", command=self.on_closing)
         if self.character_name: self.fields["asset_type"].configure(state="disabled")
         self.grab_set()
-
     def on_closing(self): self.root.destroy()
     def create_widgets(self):
         self.fields = {}; row_counter = 0
@@ -120,13 +123,14 @@ class CharacterForm(ctk.CTkToplevel):
             self.asset_type_var.set("Spritesheet")
             self.fields["sprite_sheet_path"].insert(0, self.character_data["sprite_sheet_path"])
             self.fields["animation_steps"].insert(0, ", ".join(map(str, self.character_data.get("animation_steps", []))))
+            data = self.character_data.get("data", [0, 0, 4, [0, 0]])
+            self.fields["frame_w"].insert(0, str(data[0])); self.fields["frame_h"].insert(0, str(data[1]))
         elif "base_path" in self.character_data:
             self.asset_type_var.set("Archivos Individuales")
             self.fields["base_path"].insert(0, self.character_data["base_path"])
         self.update_form_fields()
         self.fields["sound_path"].insert(0, self.character_data.get("sound_path", ""))
         data = self.character_data.get("data", [0, 0, 4, [0, 0]])
-        self.fields["frame_w"].insert(0, str(data[0])); self.fields["frame_h"].insert(0, str(data[1]))
         self.fields["escala"].insert(0, str(data[2]))
         self.fields["offsetx"].insert(0, str(data[3][0])); self.fields["offsety"].insert(0, str(data[3][1]))
     def save(self):
@@ -135,7 +139,7 @@ class CharacterForm(ctk.CTkToplevel):
             if not name: messagebox.showerror("Error", "El nombre no puede estar vacío."); return
             characters = load_characters()
             if not self.character_name and name in characters: messagebox.showerror("Error", "Ya existe un personaje con este nombre."); return
-            new_data = {"sound_path": self.fields["sound_path"].get(), "stats": {"health": 100, "speed": 10}, "special_moves": {}}
+            new_data = {"sound_path": self.fields["sound_path"].get(), "stats": {"health": 100, "speed": 10, "damage": 10}, "special_moves": {}}
             asset_type = self.asset_type_var.get()
             if asset_type == "Spritesheet":
                 path = self.fields["sprite_sheet_path"].get()
@@ -185,6 +189,83 @@ class StatEditForm(ctk.CTkToplevel):
         except ValueError: messagebox.showerror("Error de Valor", "Introduce números válidos.")
         except Exception as e: messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
 
+class BattleHistoryForm(ctk.CTkToplevel):
+    def __init__(self, master, callback, battle_data=None, record_index=None):
+        super().__init__(master)
+        self.root = master
+        self.callback = callback
+        self.battle_data = battle_data
+        self.record_index = record_index
+
+        is_editing = self.battle_data is not None
+        self.title("Editar Registro de Batalla" if is_editing else "Añadir Registro de Batalla")
+        self.geometry("400x300")
+        self.grid_columnconfigure(1, weight=1)
+        self.fields = {}
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        self.create_widgets()
+        if is_editing:
+            self.fill_form()
+        
+        self.grab_set()
+
+    def on_closing(self):
+        self.root.destroy()
+
+    def create_widgets(self):
+        row_counter = 0
+        field_map = {
+            "p1_char": "Personaje Jugador 1",
+            "p2_char": "Personaje Jugador 2",
+            "winner": "Ganador"
+        }
+
+        for key, text in field_map.items():
+            label = ctk.CTkLabel(self, text=text)
+            label.grid(row=row_counter, column=0, padx=10, pady=10, sticky="w")
+            entry = ctk.CTkEntry(self)
+            entry.grid(row=row_counter, column=1, padx=10, pady=10, sticky="ew")
+            self.fields[key] = entry
+            row_counter += 1
+        
+        self.save_button = ctk.CTkButton(self, text="Guardar", command=self.save)
+        self.save_button.grid(row=row_counter, columnspan=2, pady=20)
+
+    def fill_form(self):
+        if self.battle_data:
+            self.fields["p1_char"].insert(0, self.battle_data.get("p1_char", ""))
+            self.fields["p2_char"].insert(0, self.battle_data.get("p2_char", ""))
+            self.fields["winner"].insert(0, self.battle_data.get("winner", ""))
+
+    def save(self):
+        p1 = self.fields["p1_char"].get()
+        p2 = self.fields["p2_char"].get()
+        winner = self.fields["winner"].get()
+
+        if not all([p1, p2, winner]):
+            messagebox.showerror("Error", "Todos los campos son obligatorios.")
+            return
+
+        history = load_json_data("battle_history.json", [])
+        
+        new_record = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "p1_char": p1,
+            "p2_char": p2,
+            "winner": winner
+        }
+
+        if self.record_index is not None:
+            history[self.record_index] = new_record
+        else:
+            history.insert(0, new_record)
+        
+        save_json_data("battle_history.json", history)
+        messagebox.showinfo("Éxito", "El historial de batallas ha sido actualizado.")
+        self.callback()
+        self.on_closing()
+
 class Game:
     def __init__(self, username, user_data):
         os.environ['SDL_VIDEO_CENTERED'] = '1'; pygame.init(); mixer.init()
@@ -202,28 +283,25 @@ class Game:
         self.crud_char_idx, self.crud_opt_idx = 0,0
         self.move_crud_move_idx = 0
         self.is_listening_for_key, self.move_to_remap, self.char_for_remap = False, None, None
+        self.preview_fighter = None
+        self.history_selected_idx = 0
+        self.battle_history = []
+        self.p1_char_name, self.p2_char_name = "", ""
         self.fighter_1, self.fighter_2 = None, None
         self.score, self.round_over, self.round_over_time = [0,0], False, 0
         self.intro_count, self.last_count_update = 3, 0
-        self.preview_fighter = None
-
-    def _update_preview_fighter(self):
-        char_names = list(self.all_characters_data.keys())
-        if not char_names or self.char_select_idx >= len(char_names):
-            self.preview_fighter = None; return
-        selected_char_name = char_names[self.char_select_idx]
-        if self.preview_fighter and self.preview_fighter.username == selected_char_name: return
-        char_data = self.all_characters_data[selected_char_name]
-        assets = self.get_character_assets(selected_char_name)
-        stats = char_data.get("stats", {}); moves = char_data.get("special_moves", {})
-        preview_x = self.screen.get_width() * 0.7 - 40
-        preview_y = self.screen.get_height() * 0.6 - 90
-        self.preview_fighter = Fighter(player=0, x=preview_x, y=preview_y, flip=True, data=char_data["data"], animation_list=assets["animation_list"], sound=assets["sound"], stats=stats, special_moves=moves, username=selected_char_name)
 
     def refresh_character_data(self):
         self.all_characters_data = load_characters()
         char_count = len(self.all_characters_data)
         self.crud_char_idx = min(self.crud_char_idx, char_count - 1) if char_count > 0 else 0
+
+    def refresh_battle_history(self):
+        self.battle_history = load_json_data("battle_history.json", [])
+        if self.battle_history:
+            self.history_selected_idx = min(len(self.battle_history) - 1, self.history_selected_idx)
+        else:
+            self.history_selected_idx = 0
 
     def load_general_assets(self):
         self.count_font = pygame.font.Font(config.FONT_PATH, 80); self.score_font = pygame.font.Font(config.FONT_PATH, 30)
@@ -267,20 +345,31 @@ class Game:
             animation_list.append(temp_img_list)
         return animation_list
 
+    def _update_preview_fighter(self):
+        char_names = list(self.all_characters_data.keys())
+        if not char_names or self.char_select_idx >= len(char_names): self.preview_fighter = None; return
+        selected_char_name = char_names[self.char_select_idx]
+        if self.preview_fighter and self.preview_fighter.username == selected_char_name: return
+        char_data = self.all_characters_data[selected_char_name]
+        assets = self.get_character_assets(selected_char_name)
+        stats = char_data.get("stats", {}); moves = char_data.get("special_moves", {})
+        preview_x = self.screen.get_width() * 0.7 - 40; preview_y = self.screen.get_height() * 0.6 - 90
+        self.preview_fighter = Fighter(player=0, x=preview_x, y=preview_y, flip=True, data=char_data["data"], animation_list=assets["animation_list"], sound=assets["sound"], stats=stats, special_moves=moves, username=selected_char_name)
+
     def create_fighters(self):
-        player_char_name = self.character_class
-        player_char_data = self.all_characters_data[player_char_name]
-        player_assets = self.get_character_assets(player_char_name)
+        self.p1_char_name = self.character_class
+        player_char_data = self.all_characters_data[self.p1_char_name]
+        player_assets = self.get_character_assets(self.p1_char_name)
         stats = player_char_data.get("stats", {"health": 100, "speed": 10})
         moves = player_char_data.get("special_moves", {})
         self.fighter_1 = Fighter(1, 200, 310, False, player_char_data["data"], player_assets["animation_list"], player_assets["sound"], stats, moves, username=self.username)
-        ai_options = [name for name in self.all_characters_data if name != player_char_name]
-        ai_char_name = ai_options[0] if ai_options else player_char_name
-        ai_char_data = self.all_characters_data[ai_char_name]
-        ai_assets = self.get_character_assets(ai_char_name)
+        ai_options = [name for name in self.all_characters_data if name != self.p1_char_name]
+        self.p2_char_name = ai_options[0] if ai_options else self.p1_char_name
+        ai_char_data = self.all_characters_data[self.p2_char_name]
+        ai_assets = self.get_character_assets(self.p2_char_name)
         ai_stats = ai_char_data.get("stats", {"health": 100, "speed": 10})
         ai_moves = ai_char_data.get("special_moves", {})
-        self.fighter_2 = Fighter(2, 700, 310, True, ai_char_data["data"], ai_assets["animation_list"], ai_assets["sound"], ai_stats, ai_moves, ai=True)
+        self.fighter_2 = Fighter(2, 700, 310, True, ai_char_data["data"], ai_assets["animation_list"], ai_assets["sound"], ai_stats, ai_moves, ai=True, username=self.p2_char_name)
         self.update_volumes()
 
     def reset_round(self):
@@ -303,6 +392,7 @@ class Game:
                 elif self.game_state == 'playing':
                     if not self.round_over: self.handle_playing_keys(event.key)
                     else: self.handle_round_over_keys(event.key)
+                elif self.game_state == 'battle_history': self.handle_battle_history_keys(event)
     
     def remap_move_key(self, new_key_code):
         if new_key_code in config.FORBIDDEN_KEYS: messagebox.showwarning("No permitido", "No puedes usar W, A, S o D."); self.is_listening_for_key = False; return
@@ -332,8 +422,9 @@ class Game:
                 char_names = list(self.all_characters_data.keys())
                 if self.character_class in char_names: self.char_select_idx = char_names.index(self.character_class)
                 else: self.char_select_idx = 0
-                self._update_preview_fighter()
+                self._update_preview_fighter() 
             elif selected == 'Administrar Personajes': self.game_state = 'character_crud'; self.crud_char_idx, self.crud_opt_idx = 0, 0
+            elif selected == 'Historial de Batallas': self.game_state = 'battle_history'; self.refresh_battle_history()
             elif selected == 'Opciones': self.game_state = 'options'
             elif selected == 'Salir': pygame.quit(), sys.exit()
 
@@ -352,7 +443,7 @@ class Game:
             elif selected_option == 'Editar Estadísticas': root = ctk.CTk(); root.withdraw(); StatEditForm(root, self.refresh_character_data, selected_char_name); root.mainloop()
             elif selected_option == 'Gestionar Movimientos': self.game_state = 'move_crud'; self.crud_selected_char = selected_char_name; self.move_crud_move_idx = 0
             elif selected_option == 'Eliminar Personaje':
-                if messagebox.askyesno("Confirmar", f"¿Seguro que quieres eliminar a {selected_char_name}?"): del self.all_characters_data[selected_char_name]; save_characters(self.all_characters_data); self.refresh_character_data()
+                if messagebox.askyesno("Confirmar", f"¿Seguro que quieres eliminar a {selected_char_name}?"): del self.all_characters_data[selected_char_name]; save_json_data("characters.json", self.all_characters_data); self.refresh_character_data()
             elif selected_option == 'Volver': self.game_state = 'menu'
 
     def handle_move_crud_keys(self, key):
@@ -365,13 +456,51 @@ class Game:
             if not move_keys: messagebox.showinfo("Info", "Este personaje no tiene movimientos para editar."); return
             self.is_listening_for_key = True; self.move_to_remap = move_keys[self.move_crud_move_idx]; self.char_for_remap = self.crud_selected_char
 
+    def handle_battle_history_keys(self, event):
+        key = event.key
+        mods = pygame.key.get_mods()
+
+        if key == pygame.K_ESCAPE:
+            self.game_state = 'menu'
+        elif key == pygame.K_UP:
+            if self.battle_history:
+                self.history_selected_idx = max(0, self.history_selected_idx - 1)
+        elif key == pygame.K_DOWN:
+            if self.battle_history:
+                self.history_selected_idx = min(len(self.battle_history) - 1, self.history_selected_idx + 1)
+        elif key == pygame.K_a:
+            root = ctk.CTk()
+            root.withdraw()
+            BattleHistoryForm(root, self.refresh_battle_history)
+            root.mainloop()
+        elif key == pygame.K_e:
+            if self.battle_history:
+                selected_record = self.battle_history[self.history_selected_idx]
+                root = ctk.CTk()
+                root.withdraw()
+                BattleHistoryForm(root, self.refresh_battle_history, battle_data=selected_record, record_index=self.history_selected_idx)
+                root.mainloop()
+            else:
+                messagebox.showinfo("Información", "No hay registros para editar.")
+        elif key == pygame.K_DELETE:
+            if self.battle_history and messagebox.askyesno("Confirmar", "¿Eliminar este registro?"):
+                self.battle_history.pop(self.history_selected_idx)
+                save_json_data("battle_history.json", self.battle_history)
+                self.refresh_battle_history()
+        elif key == pygame.K_d and (mods & pygame.KMOD_LSHIFT or mods & pygame.KMOD_RSHIFT):
+             if self.battle_history and messagebox.askyesno("Confirmar Borrado Total", "¿ESTÁS SEGURO?\nEsto borrará TODO el historial de batallas."):
+                self.battle_history = []
+                save_json_data("battle_history.json", self.battle_history)
+                self.refresh_battle_history()
+
     def handle_character_select_keys(self, key):
         char_names = list(self.all_characters_data.keys());
         if not char_names: return
         if key == pygame.K_UP: self.char_select_idx = (self.char_select_idx - 1) % len(char_names); self._update_preview_fighter()
         elif key == pygame.K_DOWN: self.char_select_idx = (self.char_select_idx + 1) % len(char_names); self._update_preview_fighter()
         elif key == pygame.K_RETURN:
-            self.character_class = char_names[self.char_select_idx]; users = auth.load_users(); users[self.username]['character_class'] = self.character_class; auth.save_users(users)
+            self.character_class = char_names[self.char_select_idx]
+            users = load_users(); users[self.username]['character_class'] = self.character_class; save_users(users)
             self.game_state = 'menu'; self.preview_fighter = None
 
     def handle_options_keys(self, key):
@@ -388,7 +517,7 @@ class Game:
             elif opt == 'Volumen FX': self.fx_volume = min(100, self.fx_volume + 10); self.update_volumes()
         elif key == pygame.K_RETURN:
             if opt == 'Eliminar Cuenta':
-                if messagebox.askyesno('Confirmar', '¿Seguro?'): auth.delete_user(self.username); pygame.quit(), sys.exit()
+                if messagebox.askyesno('Confirmar', '¿Seguro?'): delete_user(self.username); pygame.quit(), sys.exit()
             elif opt == 'Volver': self.game_state = 'menu'
             
     def handle_round_over_keys(self, key):
@@ -410,13 +539,15 @@ class Game:
         elif self.game_state == 'options':
             values = {'Resolución': f"{config.RESOLUTIONS[self.res_index][0]}x{config.RESOLUTIONS[self.res_index][1]}", 'Volumen Música': str(self.music_volume), 'Volumen FX': str(self.fx_volume)}
             ui.draw_options(self.screen, self.menu_font, config.OPTIONS_ITEMS, self.options_idx, values)
+        elif self.game_state == 'battle_history':
+            ui.draw_battle_history(self.screen, self.bg_image, self.score_font, self.title_font, self.battle_history, self.history_selected_idx)
         elif self.game_state == 'playing': self.run_game_logic()
 
     def run_game_logic(self):
         ui.draw_bg(self.screen, self.bg_image); ui.draw_health_bar(self.screen, self.fighter_1.health, 20, 20)
         ui.draw_health_bar(self.screen, self.fighter_2.health, self.screen.get_width() - 420, 20)
-        ui.draw_text(self.screen, f'P1: {self.score[0]}', self.score_font, config.RED, 20, 60)
-        ui.draw_text(self.screen, f'P2: {self.score[1]}', self.score_font, config.RED, self.screen.get_width() - 120, 60)
+        ui.draw_text(self.screen, f'{self.fighter_1.username}: {self.score[0]}', self.score_font, config.RED, 20, 60)
+        ui.draw_text(self.screen, f'{self.fighter_2.username}: {self.score[1]}', self.score_font, config.RED, self.screen.get_width() - 200, 60)
         if self.intro_count <= 0:
             self.fighter_1.move(self.screen.get_width(), self.screen.get_height(), self.fighter_2, self.round_over)
             self.fighter_2.move(self.screen.get_width(), self.screen.get_height(), self.fighter_1, self.round_over)
@@ -426,8 +557,12 @@ class Game:
         self.fighter_1.update(); self.fighter_2.update()
         self.fighter_1.draw(self.screen); self.fighter_2.draw(self.screen)
         if not self.round_over:
-            if not self.fighter_1.alive: self.score[1] += 1; self.round_over, self.round_over_time = True, pygame.time.get_ticks()
-            elif not self.fighter_2.alive: self.score[0] += 1; self.round_over, self.round_over_time = True, pygame.time.get_ticks()
+            winner_name = None
+            if not self.fighter_1.alive: winner_name = self.p2_char_name; self.score[1] += 1
+            elif not self.fighter_2.alive: winner_name = self.username; self.score[0] += 1
+            if winner_name:
+                self.round_over = True; self.round_over_time = pygame.time.get_ticks()
+                record_battle_result(winner_name, self.p1_char_name, self.p2_char_name)
         else:
             if pygame.time.get_ticks() - self.round_over_time > config.ROUND_COOLDOWN:
                 ui.draw_round_over_menu(self.screen, self.menu_font, config.ROUND_OPTIONS, self.round_sel_idx, self.victory_img)

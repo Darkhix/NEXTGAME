@@ -23,12 +23,10 @@ BLACK = (0, 0, 0)
 GRAY = (100, 100, 100)
 HIGHLIGHT = (50, 150, 255)
 
-MENU_ITEMS = ['Jugar', 'Personaje', 'Administrar Personajes', 'Opciones', 'Salir']
+MENU_ITEMS = ['Jugar', 'Personaje', 'Historial de Batallas', 'Administrar Personajes', 'Opciones', 'Salir']
+
 OPTIONS_ITEMS = ['Resolución', 'Volumen Música', 'Volumen FX', 'Eliminar Cuenta', 'Volver']
 ROUND_OPTIONS = ['Reintentar', 'Volver al menú']
-# --- MODIFICADO: Simplificamos el menú. La gestión de movimientos ahora es una opción directa ---
 CRUD_MENU_ITEMS = ['Añadir Personaje', 'Ver Datos', 'Editar Estadísticas', 'Gestionar Movimientos', 'Eliminar Personaje', 'Volver']
-
-# --- NUEVO: Constantes para la nueva lógica de edición de teclas ---
-MOVE_EDIT_OPTIONS = ['Cambiar Tecla', 'Volver']
+MOVE_CRUD_OPTIONS = ['Añadir', 'Editar Tecla', 'Eliminar', 'Volver']
 FORBIDDEN_KEYS = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]
