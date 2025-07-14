@@ -2,9 +2,6 @@
     "aaaaa": {
         "password": "aaaaaaaaa"
     },
-    "Donoso": {
-        "password": "123"
-    },
     "Darkhi": {
         "password": "123",
         "correo": "darkhi@gmail.com"
@@ -13,5 +10,29 @@
         "password": "admin",
         "correo": "admin@example.com",
         "admin": true
+    },
+    "Donoso": {
+        "password": "123",
+        "character_class": "Guerrero"
+    },
+    "MrYuak": {
+        "password": "1",
+        "correo": "1@gmail.com",
+        "character_class": "Guerrero",
+        "stats": {
+            "health": 100,
+            "attacks_done": 0,
+            "is_alive": true
+        }
+    },
+    "mati": {
+        "password": "hola123",
+        "correo": "como_tamos@gmail.com",
+        "character_class": "Knight2",
+        "stats": {
+            "health": 100,
+            "attacks_done": 0,
+            "is_alive": true
+        }
     }
 }

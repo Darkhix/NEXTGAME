@@ -1,0 +1,158 @@
+{
+  "Guerrero": {
+    "sprite_sheet_path": "assets/images/warrior/Sprites/warrior.png",
+    "sound_path": "assets/audio/sword.wav",
+    "data": [
+      162,
+      162,
+      4,
+      [
+        72,
+        56
+      ]
+    ],
+    "animation_steps": [
+      10,
+      8,
+      1,
+      7,
+      7,
+      3,
+      7
+    ],
+    "stats": {
+      "health": 100,
+      "damage": 12,
+      "speed": 10
+    },
+    "special_moves": {
+      "K_t": {
+        "name": "Estocada Fuerte",
+        "animation_row": 4,
+        "damage": 25,
+        "cooldown": 50
+      },
+      "K_y": {
+        "name": "Corte Rapido",
+        "animation_row": 3,
+        "damage": 12,
+        "cooldown": 20
+      }
+    }
+  },
+  "Mago": {
+    "sprite_sheet_path": "assets/images/wizard/Sprites/wizard.png",
+    "sound_path": "assets/audio/magic.wav",
+    "data": [
+      250,
+      250,
+      3,
+      [
+        100,
+        80
+      ]
+    ],
+    "animation_steps": [
+      8,
+      8,
+      2,
+      2,
+      4,
+      4,
+      4
+    ],
+    "stats": {
+      "health": 80,
+      "damage": 15,
+      "speed": 8
+    },
+    "special_moves": {
+      "K_f": {
+        "name": "Bola de Fuego",
+        "animation_row": 4,
+        "damage": 30,
+        "cooldown": 40
+      },
+      "K_g": {
+        "name": "Rayo Congelante",
+        "animation_row": 4,
+        "damage": 10,
+        "cooldown": 15
+      }
+    }
+  },
+  "Sword and Shield": {
+    "sprite_sheet_path": "assets/images/Sword And Shield/Sprites/Sword And Shield.png",
+    "sound_path": "assets/audio/sword.wav",
+    "data": [
+      120,
+      80,
+      4,
+      [
+        50,
+        20
+      ]
+    ],
+    "animation_steps": [
+      10,
+      8,
+      2,
+      2,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "stats": {
+      "health": 120,
+      "damage": 8,
+      "speed": 7
+    },
+    "special_moves": {
+      "K_g": {
+        "name": "Golpe de Escudo",
+        "animation_row": 4,
+        "damage": 10,
+        "cooldown": 25
+      }
+    }
+  },
+  "Knight2": {
+    "sprite_sheet_path": "assets/images/Two Handed Sword/two_handed_sword_spritesheet.png",
+    "sound_path": "assets/audio/sword.wav",
+    "data": [
+      100,
+      100,
+      4,
+      [
+        50,
+        20
+      ]
+    ],
+    "animation_steps": [
+      4,
+      8,
+      2,
+      2,
+      4,
+      4,
+      4,
+      0,
+      0
+    ],
+    "stats": {
+      "health": 120,
+      "damage": 8,
+      "speed": 7
+    },
+    "special_moves": {
+      "K_r": {
+        "name": "Golpe de Escudo",
+        "animation_row": 4,
+        "damage": 10,
+        "cooldown": 25
+      }
+    }
+  }
+}
