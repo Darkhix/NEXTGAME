@@ -6,7 +6,7 @@
     },
     "MrYuak": {
         "health": 0,
-        "attacks_done": 6,
+        "attacks_done": 5,
         "is_alive": false
     },
     "Sword and Shield": {
@@ -15,23 +15,18 @@
         "is_alive": true
     },
     "Mago": {
-        "health": 0,
+        "health": 80,
         "attacks_done": 0,
-        "is_alive": false
+        "is_alive": true
     },
     "Guerrero": {
-        "health": 100,
-        "attacks_done": 0,
+        "health": 50,
+        "attacks_done": 5,
         "is_alive": true
     },
     "Knight2": {
         "health": 120,
         "attacks_done": 0,
         "is_alive": true
-    },
-    "mati": {
-        "health": 0,
-        "attacks_done": 8,
-        "is_alive": false
     }
 }

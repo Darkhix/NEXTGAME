@@ -1,0 +1,54 @@
+{
+    "m1": {
+        "description": "Gana 2 partidas",
+        "type": "win_games",
+        "target": 2,
+        "reward": 50
+    },
+    "m2": {
+        "description": "Juega 3 partidas con Guerrero",
+        "type": "play_with_char",
+        "character": "Guerrero",
+        "target": 3,
+        "reward": 75
+    },
+    "m3": {
+        "description": "Juega 3 partidas con Mago",
+        "type": "play_with_char",
+        "character": "Mago",
+        "target": 3,
+        "reward": 75
+    },
+    "m4": {
+        "description": "Realiza 10 ataques especiales en total",
+        "type": "use_specials",
+        "target": 10,
+        "reward": 100
+    },
+    "m5": {
+        "description": "Gana una partida con el personaje Mago",
+        "type": "win_with_char",
+        "character": "Mago",
+        "target": 1,
+        "reward": 150
+    },
+    "m6": {
+        "description": "Juega 5 partidas en total",
+        "type": "play_games",
+        "target": 5,
+        "reward": 40
+    },
+    "m7": {
+        "description": "Gana una partida sin recibir daño (Perfect)",
+        "type": "win_perfect",
+        "target": 1,
+        "reward": 250
+    },
+    "     ": {
+        "description": "     ",
+        "type": "     ",
+        "target": -1,
+        "reward": -2,
+        "character": "   "
+    }
+}
